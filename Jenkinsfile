@@ -23,7 +23,7 @@ pipeline {
 
         stage('Upload to SonarCloud') {
             steps {
-                withCredentials([string(credentialsId: 'SONAR_CLOUD_TOKEN', variable: 'TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'TOKEN')]) {
                     bat """
                         powershell Compress-Archive -Path * -DestinationPath project.zip
                         curl -X POST "https://sonarcloud.io/api/scanner/scan" ^
