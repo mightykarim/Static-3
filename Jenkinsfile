@@ -19,7 +19,6 @@ pipeline {
                 echo "Build step..."
             }
         }
-
         stage('SonarCloud Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'TOKEN')]) {
@@ -30,12 +29,16 @@ pipeline {
                               -Dsonar.organization=mightykarim ^
                               -Dsonar.sources=. ^
                               -Dsonar.host.url=https://sonarcloud.io ^
-                              -Dsonar.login=%TOKEN%
+                              -Dsonar.login=%TOKEN% ^
+                              -Dsonar.c.file.suffixes=- ^
+                              -Dsonar.cpp.file.suffixes=- ^
+                              -Dsonar.objc.file.suffixes=-
                         """
                     }
                 }
             }
         }
+
 
         stage('Quality Gate') {
             steps {
