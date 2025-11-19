@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONARCLOUD_URL = "https://sonarcloud.io"
-        ORG = "mightykarim"
         PROJECT = "Static-3"
+        ORG = "mightykarim"
     }
 
     stages {
@@ -21,48 +20,34 @@ pipeline {
             }
         }
 
-        stage('Upload to SonarCloud') {
+        stage('SonarCloud Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'TOKEN')]) {
-                    bat """
-                        powershell Compress-Archive -Path * -DestinationPath project.zip
-                        curl -X POST "https://sonarcloud.io/api/scanner/scan" ^
-                            -H "Authorization: Bearer %TOKEN%" ^
-                            -F "projectKey=Static-3" ^
-                            -F "organization=mightykarim" ^
-                            -F "code=@project.zip"
-                    """
+                    withSonarQubeEnv('SonarCloud') {
+                        bat """
+                            ${tool 'SonarScanner'}\\bin\\sonar-scanner.bat ^
+                              -Dsonar.projectKey=Static-3 ^
+                              -Dsonar.organization=mightykarim ^
+                              -Dsonar.sources=. ^
+                              -Dsonar.host.url=https://sonarcloud.io ^
+                              -Dsonar.login=%TOKEN%
+                        """
+                    }
                 }
             }
         }
 
-
-        stage('Quality Gate Check') {
+        stage('Quality Gate') {
             steps {
-                script {
-                    echo "Checking Quality Gate..."
-                    timeout(time: 60, unit: 'SECONDS') {
-                        def status = bat(
-                            script: """
-                                curl -s -H "Authorization: Bearer %TOKEN%" "%SONARCLOUD_URL%/api/qualitygates/project_status?projectKey=%PROJECT%"
-                            """,
-                            returnStdout: true
-                        ).trim()
-                        echo "Response: ${status}"
-
-                        if (status.contains('"status":"ERROR"')) {
-                            error("❌ Quality Gate Failed")
-                        } else {
-                            echo "✅ Quality Gate Passed"
-                        }
-                    }
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Done — Deployment stage"
+                echo "Deployment step..."
             }
         }
     }
