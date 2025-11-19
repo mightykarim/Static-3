@@ -43,7 +43,16 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status == 'NONE') {
+                            echo "Warning: No quality gate configured in SonarCloud. Continuing pipeline..."
+                        } else if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        } else {
+                            echo "Quality gate passed: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
