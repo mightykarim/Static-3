@@ -3,33 +3,35 @@ pipeline {
 
     environment {
         SONARCLOUD_URL = "https://sonarcloud.io"
-        ORG = "your-org"
-        PROJECT = "Static-3"
+        ORG = "mightykarim"          // your SonarCloud org (matches GitHub login/org)
+        PROJECT = "Static-3"         // your GitHub repo/project name
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                // Checkout your GitHub repo
+                git branch: 'main', url: 'https://github.com/mightykarim/Static-3.git'
             }
         }
 
         stage('Build') {
             steps {
                 echo "Build step..."
+                // Add real build commands here if needed, e.g., npm install, mvn package
             }
         }
 
         stage('Upload to SonarCloud') {
             steps {
-                withCredentials([string(credentialsId: 'SONAR_CLOUD_TOKEN', variable: 'TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'TOKEN')]) {
                     sh """
                         curl -X POST "$SONARCLOUD_URL/api/scanner/scan" \
                             -H "Authorization: Bearer $TOKEN" \
                             -F "projectKey=$PROJECT" \
                             -F "organization=$ORG" \
-                            -F "code=@." 
+                            -F "code=@."
                     """
                 }
             }
@@ -40,7 +42,7 @@ pipeline {
                 script {
                     echo "Checking Quality Gate..."
 
-                    sleep 10
+                    sleep 10 // Wait for SonarCloud analysis to complete
 
                     def status = sh(
                         script: """
@@ -54,6 +56,8 @@ pipeline {
 
                     if (status.contains('"status":"ERROR"')) {
                         error("❌ Quality Gate Failed")
+                    } else {
+                        echo "✅ Quality Gate Passed"
                     }
                 }
             }
@@ -61,7 +65,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo "Done"
+                echo "Done — Deployment stage (runs only if Quality Gate passes)"
             }
         }
     }
