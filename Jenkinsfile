@@ -23,17 +23,19 @@ pipeline {
 
         stage('Upload to SonarCloud') {
             steps {
-                withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'TOKEN')]) {
+                withCredentials([string(credentialsId: 'SONAR_CLOUD_TOKEN', variable: 'TOKEN')]) {
                     bat """
-                        curl -X POST "%SONARCLOUD_URL%/api/scanner/scan" ^
+                        powershell Compress-Archive -Path * -DestinationPath project.zip
+                        curl -X POST "https://sonarcloud.io/api/scanner/scan" ^
                             -H "Authorization: Bearer %TOKEN%" ^
-                            -F "projectKey=%PROJECT%" ^
-                            -F "organization=%ORG%" ^
-                            -F "code=@."
+                            -F "projectKey=Static-3" ^
+                            -F "organization=mightykarim" ^
+                            -F "code=@project.zip"
                     """
                 }
             }
         }
+
 
         stage('Quality Gate Check') {
             steps {
